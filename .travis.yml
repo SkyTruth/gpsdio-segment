@@ -1,0 +1,21 @@
+language: python
+sudo: false
+
+cache:
+  directories:
+    - ~/.cache/pip
+
+python:
+  - 2.7
+  - 3.7
+
+install:
+  - pip install -e .\[dev\]
+  - pip install python-dateutil pytz
+
+script:
+  - py.test tests --cov gpsdio_segment --cov-report term-missing
+
+notifications:
+  slack:
+    secure: aTH7GHZ9KDtfj2Vw1xx5NdOYzLWidsKGYd5zXvrr3jlV0/AorRWK8lNmxMmhbdhfgsEuOxDTSf0+PtPXFVs5iJF4RbRtdoAaFRz52p3H45sadK3aFI5QAz3/rdAf/qOf7HVGaT9KwVrhBtVNeoRlvlZlp6krZgu1L4SCIBaJz8XJ4itaO6lb7kdTnnlUCzZxfDVgiPWxK6qcC5hyOJW/BXTkKL2yyoLDnSn4sI6YTNFWwRf7cjnFdMRmgDmtuvLxhNwU9gx7qJNO4hEZ97NEzG/gLy+EdurxFe4zP2SVY8V2lT3c6rHEN9iXk6QQ+nyjXMrKwgijB58RBPiWZfNtkMIxMDRLEXUFy5x54iszBkQOu6PCSGJyOddzzYIgZL6vkPJg6MFO2xaRmYQFW13YIZSPJMG3K1rqqrYB5+B50Qf2b+JLGvCm7JR8njLXaZccuLBtekOvu+4bsESDC45J40l635/GIO9RN+jOt1zQhQCVSr3xErKUfAjdRA/jux5EsDSgiIjaTkiaECUdVoNrQYc8NsAn86UIlpbOZ6pxxSLnlo90+u11VNGctlO+Mr8P01rLM6K4P2s6N3qAJcnjU1gXgWB09BYTufcT63VPApiANbIVUFVa1lPGztmCjDB8qLEKxOginToHo4/J4xvFJqjW0FME+JqaeHCK9uPXn3c=

@@ -1,0 +1,8 @@
+version: '2'
+services:
+  dev:
+    image: gfw/lib-gpsdio-segment
+    build: .
+    volumes:
+      - .:/opt/project
+
