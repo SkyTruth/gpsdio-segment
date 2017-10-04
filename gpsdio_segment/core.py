@@ -244,15 +244,29 @@ class Segmentizer(object):
 
 
     def _segment_match_metric(self, segment, msg):
+        '''
+        This returns None if the new message msg is out of range compared to a segment. If
+        The message is in range, or within 2 hours of the last point, it returns a tuple
+        with the following: the match metric, the distance between the msg and the 
+        last point of the segment, and the ratio of the implied speed to the accpetable
+        max speed of that vessel.
+
+        Args
+            self:  
+            segment: 
+            msg: 
+
+        Rerturns:
+            None if there is no possibiliy of amatch. If there is, it returns a tuple described above,
+
+
+        '''
+
         if not segment.last_time_posit_msg:
-            return self.max_hours * self.max_speed
+            return self.max_hours * self.max_speed, 0, 0
 
         stats = self.msg_diff_stats(msg, segment.last_time_posit_msg)
 
-        # print msg['timestamp'], stats
-
-        # allow a higher max computed speed for vessels that report a high speed
-        # multiply reported speed by 1.1 to give a 10 percent speed buffer
         seg_duration = max(1.0, segment.total_seconds) / 3600
 
         if stats['timedelta'] > self.max_hours:
@@ -260,35 +274,54 @@ class Segmentizer(object):
         elif stats['timedelta'] == 0:
             # only keep idenitcal timestamps if the distance is small
             # allow for the distance you can go at max speed for one minute
-            if stats['distance'] < (self.max_speed / 60):  # max_speed is nautical miles per hour, so divide by 60 for minutes
-                return stats['distance'] / seg_duration
+            if stats['distance'] < (self.max_speed / 60):  
+            # max_speed is nautical miles per hour, so divide by 60 for minutes
+                return stats['distance'] / seg_duration, 0
             else:
                 return None
         elif stats['distance'] == 0:
-            return stats['timedelta'] / seg_duration
+            return stats['timedelta'] / seg_duration, 0, 0 
         else:
+            # allow a higher max computed speed for vessels that report a high speed
+            # multiply reported speed by 1.1 to give a 10 percent speed buffer
             max_speed_at_inf = max(self.max_speed, stats['reported_speed'] * 1.1)
             max_speed_at_distance = max_speed_at_inf * (1 + 15 / (stats['distance'])**1.3)
             # This previously gave an unrealistic speed. This new version, with max speed 
             # of 30, and thus max_speed_at_inf of 60, allows a vessel to travel 1nm 20 seconds,
             # 1.5 nautical miles in a minute. After 20 minutes, the allowed speed drops
             # to about 30 knots. In other words, below gaps between points of under 
-            # 20 minutes, faster speeds are allowed. 
-            if stats['speed'] > max_speed_at_distance:
-                return None
-            else:
-                return stats['timedelta'] / seg_duration
+            # 20 minutes, faster speeds are allowed.
 
-    def _compute_best(self, msg):
+            if stats['timedelta'] < 2 or stats['speed'] < max_speed_at_distance:
+                # this returns two things to keep track of
+                # if there are points within 2 hours and 
+                return stats['timedelta'] / seg_duration, stats['distance'], stats['speed']/max_speed_at_distance
+            else
+                return None
+
+    def _compute_best(self, msg): 
         best = None
         best_metric = None
+        cutoff_distance = 50 # the distance that we should look for other segments
+        best_metric_withincutoff = True
         for segment in self._segments.values():
             metric = self._segment_match_metric(segment, msg)
             if metric is not None:
-                if best is None or metric < best_metric:
+                if best is None or (metric < best_metric[0] and best_metric[1] < cutoff_distance):
                     best = segment.id
                     best_metric = metric
-        return best
+                    # if the implied speed is greater than the max_speed_at_distance, this value
+                    # will be larger than 1. A
+                    if best_metric[2] > 1:
+                        best_metric_withincutoff = False
+        # If the best metric is within the speed cutoff, accept it. 
+        # if not, return None and create a new segement.
+        # This will likely produce lots of short segments that overlap with
+        # longer segments, and we can/should eliminate these
+        if best_metric_withincutoff:
+            return best
+        else:
+            return None 
 
     def __iter__(self):
         return self.process()
