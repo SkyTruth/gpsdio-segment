@@ -14,6 +14,8 @@ from gpsdio_segment.core import Segmentizer
 from gpsdio_segment.core import DEFAULT_MAX_SPEED
 from gpsdio_segment.core import DEFAULT_MAX_HOURS
 from gpsdio_segment.core import DEFAULT_NOISE_DIST
+from gpsdio_segment.core import MAX_SPEED_MULTIPLIER
+from gpsdio_segment.core import MAX_SPEED_EXPONENT
 
 
 @click.command()
@@ -36,16 +38,26 @@ from gpsdio_segment.core import DEFAULT_NOISE_DIST
 )
 @click.option(
     '--noise-dist', type=click.FLOAT, default=DEFAULT_NOISE_DIST,
-    help="DEPRECATED. Units are nautical miles.  Points within this distance are always considered "
-         "continuous.  Used to allow a certain amount of GPS noise. "
+    help="The distance within which, if another segment is "
          "(default: {})".format(DEFAULT_NOISE_DIST)
+)
+@click.option(
+    '--max-speed-multiplier', type=click.FLOAT, default=MAX_SPEED_MULTIPLIER,
+    help="speed cutoff equation parameter"
+         "(default: {})".format(MAX_SPEED_MULTIPLIER)
+)
+@click.option(
+    '--max-speed-exponent', type=click.FLOAT, default=MAX_SPEED_EXPONENT,
+    help="speed cutoff equation parameter"
+         "(default: {})".format(MAX_SPEED_EXPONENT)
 )
 @click.option(
     '--segment-field', default='segment',
     help="Add the segment ID to this field when writing messages. (default: segment)"
 )
 @click.pass_context
-def segment(ctx, infile, outfile, mmsi, max_hours, max_speed, noise_dist, segment_field):
+def segment(ctx, infile, outfile, mmsi, max_hours, max_speed, noise_dist,
+ segment_field, max_speed_multiplier, max_speed_exponent):
 
     """
     Group AIS data into continuous segments.
@@ -61,7 +73,9 @@ def segment(ctx, infile, outfile, mmsi, max_hours, max_speed, noise_dist, segmen
         logger.debug("Beginning to segment")
         for t_idx, seg in enumerate(Segmentizer(
                 src, mmsi=mmsi, max_hours=max_hours,
-                max_speed=max_speed, noise_dist=noise_dist)):
+                max_speed=max_speed, noise_dist=noise_dist,
+                 max_speed_multiplier=max_speed_multiplier,
+                 max_speed_exponent=max_speed_exponent)):
 
             logger.debug("Writing segment %s with %s messages and %s points",
                          seg.id, len(seg), len(seg.coords))
