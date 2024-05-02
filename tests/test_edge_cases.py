@@ -702,3 +702,64 @@ def test_duplicate_ts_multiple_segs():
     assert [[0, 2, 3, 4], [1]] == sorted(
         [sorted({msg["idx"] for msg in seg}) for seg in segments]
     )
+
+
+def test_missing_course_low_speed():
+    msg1 = {
+        "ssvid": 1,
+        "msgid": 0,
+        "lat": 21.42061667,
+        "lon": -91.77805,
+        "type": "AIS.1",
+        "timestamp": datetime(2024, 1, 1, 0, 0, 0),
+        "course": 0,
+        "speed": 0.1,
+    }
+    msg2 = {
+        "ssvid": 1,
+        "msgid": 99,
+        "lat": 21.45295,
+        "lon": -91.80513333,
+        "type": "AIS.1",
+        "timestamp": datetime(2024, 1, 1, 1, 0, 0),
+        "speed": 0.1,
+    }
+    msgs = []
+    for i in range(4):
+        m = msg1.copy()
+        m["msgid"] += i
+        msgs.append(m)
+    msgs.append(msg2)
+    msgs = [utcify(x) for x in msgs]
+    segments = list(Segmentizer(msgs))
+    assert len(segments) == 1
+    for seg in segments:
+        assert len(seg) == 2
+
+def test_exceed_max_open_segment_with_missing_course():
+    # missing course
+    max_open_segments = 10
+    msg1 = {
+        "ssvid": 1,
+        "msgid": 0,
+        "lat": 0,
+        "lon": 0,
+        "type": "AIS.1",
+        "timestamp": datetime(2024, 1, 1, 0, 0, 0),
+        "speed": 0,
+    }
+    msgs = []
+
+    # make this look like multiple different vessels on the same ssvid
+    # each position starts a new segment
+    for i in range(max_open_segments + 1):
+        m = msg1.copy()
+        m["msgid"] += i
+        m["lat"] += i
+        m["lon"] += i
+        m['timestamp'] += timedelta(minutes=i)
+        msgs.append(m)
+    msgs = [utcify(x) for x in msgs]
+
+    segments = list(Segmentizer(msgs, max_open_segments=max_open_segments))
+    assert len(segments) == len(msgs)

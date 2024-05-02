@@ -8,7 +8,7 @@ def is_null(v):
 
 
 def safe_course(msg):
-    course = msg["course"]
+    course = msg.get("course")
     return 0 if is_null(course) else course
 
 
@@ -77,7 +77,7 @@ class DiscrepancyCalculator:
         x = msg["lon"]
         y = msg["lat"]
         speed = msg["speed"]
-        course = msg["course"]
+        course = msg.get("course")
         if is_null(course):
             assert speed <= cls.very_slow, (course, speed)
             course = 0

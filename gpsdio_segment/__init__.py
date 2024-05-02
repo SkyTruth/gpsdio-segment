@@ -8,7 +8,7 @@ Includes a CLI plugin for `gpsdio` to run the algorithm.
 from gpsdio_segment.core import Segmentizer  # noqa: F401
 from gpsdio_segment.segment import BadSegment, Segment  # noqa: F401
 
-__version__ = "3.0.0"
+__version__ = "3.0.1+exp5"
 
 __author__ = "Paul Woods"
 __email__ = "paul@globalfishingwatch.org"

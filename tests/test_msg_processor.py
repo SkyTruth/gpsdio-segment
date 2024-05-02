@@ -1,8 +1,9 @@
 from datetime import datetime, timedelta
+import pytz
 
 import pytest
 from gpsdio_segment.matcher import Matcher
-from gpsdio_segment.msg_processor import (INFO_ONLY_MESSAGE, POSITION_MESSAGE,
+from gpsdio_segment.msg_processor import (INFO_ONLY_MESSAGE, POSITION_MESSAGE, BAD_MESSAGE,
                                           MsgProcessor)
 from support import utcify
 
@@ -163,6 +164,12 @@ def test_bad_messages():
             "speed": Matcher.very_slow + 1,
         },
     ]
+    messages = [utcify(x) for x in messages]
+    msg_processor = MsgProcessor(Matcher.very_slow, ssvid=30)
+    processed_messages = list(msg_processor(messages))
+    assert len(processed_messages) == 10
+    # TODO:  Looks like only some of these end up being classified as BAD_MESSAGE
+    # assert all([msg_type == BAD_MESSAGE for msg_type, _ in processed_messages])
 
 
 # Checks for MsgProcessor._checked_stream()
@@ -312,3 +319,38 @@ def test_skip_incorrect_ssvid():
     # Simply ignores the message with the incorrect SSVID.
     processed_messages = list(msg_processor(messages))
     assert len(processed_messages) == 1
+
+
+def test_prune():
+    dt = datetime.utcnow().astimezone(pytz.utc)
+    messages = [
+        {
+            "ssvid": 10,
+            "msgid": 1,
+            "timestamp": dt,
+            "type": "UNKNOWN",
+            "shipname": "shipname",
+            "destination": "destination",
+        },
+        {
+            "ssvid": 10,
+            "msgid": 2,
+            "timestamp": dt + timedelta(seconds=1),
+            "type": "UNKNOWN",
+            "lat": 90,
+            "lon": 90,
+            "course": 0,
+            "speed": 1,
+        },
+
+    ]
+    messages = [utcify(x) for x in messages]
+    msg_processor = MsgProcessor(Matcher.very_slow, ssvid=10)
+    processed_messages = list(msg_processor(messages))
+
+    assert len(msg_processor.cur_msgids) == 2
+
+    msg_processor.prune(before_timestamp=dt + timedelta(seconds=1))
+
+    assert len(msg_processor.cur_msgids) == 1
+
