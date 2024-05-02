@@ -727,7 +727,7 @@ def test_missing_course_low_speed():
     msgs = []
     for i in range(4):
         m = msg1.copy()
-        m["msgid"] += 0
+        m["msgid"] += i
         msgs.append(m)
     msgs.append(msg2)
     msgs = [utcify(x) for x in msgs]
@@ -735,3 +735,31 @@ def test_missing_course_low_speed():
     assert len(segments) == 1
     for seg in segments:
         assert len(seg) == 2
+
+def test_exceed_max_open_segment_with_missing_course():
+    # missing course
+    max_open_segments = 10
+    msg1 = {
+        "ssvid": 1,
+        "msgid": 0,
+        "lat": 0,
+        "lon": 0,
+        "type": "AIS.1",
+        "timestamp": datetime(2024, 1, 1, 0, 0, 0),
+        "speed": 0,
+    }
+    msgs = []
+
+    # make this look like multiple different vessels on the same ssvid
+    # each position starts a new segment
+    for i in range(max_open_segments + 1):
+        m = msg1.copy()
+        m["msgid"] += i
+        m["lat"] += i
+        m["lon"] += i
+        m['timestamp'] += timedelta(minutes=i)
+        msgs.append(m)
+    msgs = [utcify(x) for x in msgs]
+
+    segments = list(Segmentizer(msgs, max_open_segments=max_open_segments))
+    assert len(segments) == len(msgs)

@@ -211,7 +211,7 @@ class Segmenter:
                 key=lambda x: (
                     x[1].last_msg["timestamp"],
                     x[1].last_msg["msgid"],
-                    x[1].last_msg["course"],
+                    x[1].last_msg.get("course"),
                     x[1].last_msg["speed"],
                 )
             )
@@ -328,6 +328,7 @@ class Segmenter:
         Mark messages that need to be dropped and add `msg` to the
         matched segment.
         """
+        print (best_match)
         id_ = best_match["seg_id"]
         for msg_to_drop in best_match["msgs_to_drop"]:
             msg_to_drop["drop"] = True
