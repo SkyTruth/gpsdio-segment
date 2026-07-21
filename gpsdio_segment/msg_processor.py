@@ -193,7 +193,7 @@ class MsgProcessor:
         rounded_ts = datetime.datetime(
             ts.year, ts.month, ts.day, ts.hour, ts.minute, tzinfo=ts.tzinfo
         )
-        match_key = (transponder_type, receiver_type, source)
+        match_key = (transponder_type, receiver_type)
         for offset in range(-INFO_PING_INTERVAL_MINS, INFO_PING_INTERVAL_MINS + 1):
             time_key = rounded_ts + datetime.timedelta(minutes=offset)
             if time_key not in self.identities:
@@ -230,7 +230,7 @@ class MsgProcessor:
 
         if time_key in self.identities:
             for transponder_type in POSITION_TYPES.get(msg.get("type"), ()):
-                match_key = (transponder_type, receiver_type, source)
+                match_key = (transponder_type, receiver_type)
                 if match_key in self.identities[time_key]:
                     idents = self.identities[time_key][match_key]
                     for k, v in idents.items():
@@ -238,7 +238,7 @@ class MsgProcessor:
 
         if time_key in self.destinations:
             for transponder_type in POSITION_TYPES.get(msg.get("type"), ()):
-                match_key = (transponder_type, receiver_type, source)
+                match_key = (transponder_type, receiver_type)
                 if match_key in self.destinations[time_key]:
                     dests = self.destinations[time_key][match_key]
                     for k, v in dests.items():
